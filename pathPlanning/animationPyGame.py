@@ -2,8 +2,9 @@ import pygame
 import numpy as np
 import heapq
 import time
+import imageio
 
-# === Grid and A* Setup ===
+# === A* Search ===
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
@@ -30,12 +31,11 @@ def a_star(grid, start, goal):
                 heapq.heappush(open_set, (g + cost + heuristic((nx, ny), goal), g + cost, (nx, ny), path + [(nx, ny)]))
     return None
 
-# === Pygame Setup ===
+# === Pygame Visualization Settings ===
 CELL_SIZE = 30
 MARGIN = 2
 WIDTH, HEIGHT = CELL_SIZE * 20, CELL_SIZE * 20
 WHITE = (255, 255, 255)
-GREY = (200, 200, 200)
 BLACK = (0, 0, 0)
 RED = (220, 50, 50)
 BLUE = (50, 100, 255)
@@ -65,11 +65,14 @@ def draw_grid(screen, grid, path, current=None, start=None, goal=None):
 
             pygame.draw.rect(screen, color, rect)
 
-def animate_robot(grid, path, start, goal):
+# === Animate and Save as Video ===
+def animate_robot(grid, path, start, goal, save_video_path="quadruped_path.mp4"):
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Quadruped Path Animation")
     clock = pygame.time.Clock()
+
+    frames = []
 
     for index, cell in enumerate(path):
         for event in pygame.event.get():
@@ -80,27 +83,43 @@ def animate_robot(grid, path, start, goal):
         screen.fill(WHITE)
         draw_grid(screen, grid, path[:index+1], current=cell, start=start, goal=goal)
         pygame.display.flip()
-        clock.tick(10)  # speed of animation (frames per second)
 
-    # Final state
+        # Capture frame
+        frame = pygame.surfarray.array3d(screen)
+        frame = np.transpose(frame, (1, 0, 2))  # (width, height, channels) → (height, width, channels)
+        frames.append(frame.copy())
+
+        clock.tick(10)  # FPS
+
+    # Save video
+    imageio.mimsave(save_video_path, frames, fps=10)
+    print(f"Animation saved as '{save_video_path}'")
+
     time.sleep(2)
     pygame.quit()
 
-# === Run Everything ===
+# === Main Execution ===
 if __name__ == "__main__":
     np.random.seed(42)
     grid = np.random.randint(1, 10, (20, 20)).tolist()
-    for _ in range(60):  # Add obstacles
+
+    # Place 60 random obstacles
+    for _ in range(60):
         x, y = np.random.randint(0, 20), np.random.randint(0, 20)
         grid[x][y] = -1
 
     start = (0, 0)
     goal = (19, 19)
+
+    print("🔍 Finding path using A*...")
     path = a_star(grid, start, goal)
 
     if path:
-        print("Path found! Total cost:", sum(grid[x][y] for x, y in path))
-        animate_robot(grid, path, start, goal)
+        total_cost = sum(grid[x][y] for x, y in path)
+        print(" Path found!")
+        print("Total Cost:", total_cost)
+        print("Path:", path)
+        animate_robot(grid, path, start, goal, save_video_path="quadruped_path.mp4")
     else:
-        print("⚠️ No path found from start to goal.")
+        print(" No path found from start to goal.")
 
