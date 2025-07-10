@@ -33,7 +33,7 @@ def heuristic(a, b):
     # Manhattan Distance
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def visualize_path(grid, path, start, goal):
+def visualize_path(grid, path, start, goal, save_path='path_result.png'):
     grid_disp = np.array(grid)
     fig, ax = plt.subplots(figsize=(8, 8))
 
@@ -55,7 +55,12 @@ def visualize_path(grid, path, start, goal):
 
     plt.legend()
     plt.title("Quadruped Path Planning")
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)  # <-- SAVE the figure here
+    print(f"Path image saved as '{save_path}'")
+
     plt.show()
+
 
 # Sample Grid (20x20)
 np.random.seed(42)
